@@ -18,7 +18,7 @@ def arg_parser():
     return args
 
 #modulate training data
-def train_data_transformer(train_dir):
+def train_data_transform(train_dir):
     train_transforms = transforms.Compose([transforms.Resize(255),
                                 transforms.CenterCrop(224),
                                 transforms.RandomHorizontalFlip(),
@@ -29,7 +29,7 @@ def train_data_transformer(train_dir):
     return train_data
 
 #modulate testing data
-def test_data_transformer(test_dir):
+def test_data_transform(test_dir):
     test_transforms = transforms.Compose([transforms.Resize(255),
                                 transforms.CenterCrop(224),
                                 transforms.ToTensor(),
@@ -39,7 +39,7 @@ def test_data_transformer(test_dir):
     return test_data
 
 #create dataloader from dataset
-def data_loader(data, train=True):
+def load_data(data, train=True):
     if train:
         loader = torch.utils.data.DataLoader(data, batch_size=50, shuffle=True)
     else:
@@ -56,7 +56,7 @@ def check_gpu(gpu_arg):
         print("no coke, pepsi")
     return device
 
-def primaryloader_model(architecture="vgg16"):
+def model_load(architecture="vgg16"):
     if type(architecture) == type(None):
         model = models.vgg16(pretrained=True)
         model.name = "vgg16"
@@ -85,11 +85,11 @@ def initial_classifier(model, hidden_units):
     return classifier
 
 
-def network_trainer(model, trainloader, testloader, Device,
+def network_trainer(model, trainloader, testloader, device,
                   criterion, optimizer, epochs, print_every, steps):
     # Check Model Kwarg
     if type(epochs) == type(None):
-        epochs = 3
+        epochs = 1
 
     print("Training \n")
     model.to("cuda")
@@ -138,14 +138,16 @@ def network_trainer(model, trainloader, testloader, Device,
     return model
 
 #good
-def validate_model(model, Testloader, Device):
+def validate(model, testloader, Device):
    # Do validation on the test set
+    print("Testing\n")
+
     correct = 0
     total = 0
     model.to('cuda')
     with torch.no_grad():
         model.eval
-        for data in trainloader:
+        for data in testloader:
             inputs, labels = data
             inputs, labels = inputs.to('cuda'), labels.to('cuda')
             outputs = model(inputs)
@@ -156,6 +158,7 @@ def validate_model(model, Testloader, Device):
 
 #good
 def initial_checkpoint(model, Save_Dir, train_data):
+    print("loading model")
     model.class_to_idx = train_data.class_to_idx
     #good
     checkpoint = {'input_size': 25088,
@@ -163,10 +166,8 @@ def initial_checkpoint(model, Save_Dir, train_data):
               'arch': 'vgg16',
               'classifier' : model.classifier,
               'learning_rate': 0.001,
-              'epochs': epochs,
               'class_to_idx': model.class_to_idx,
               'state_dict': model.state_dict(),
-              'optimizer': optimizer.state_dict(),
              }
     torch.save(checkpoint, 'save_new_checkpoint.pth')
 
@@ -183,16 +184,16 @@ def main():
     test_dir = data_dir + '/test'
 
     # Pass transforms in, then create trainloader
-    train_data = train_data_transformer(train_dir)
-    valid_data = test_data_transformer(valid_dir)
-    test_data = test_data_transformer(test_dir)
+    train_data = train_data_transform(train_dir)
+    valid_data = test_data_transform(valid_dir)
+    test_data = test_data_transform(test_dir)
 
-    trainloader = data_loader(train_data)
-    validloader = data_loader(valid_data, train=False)
-    testloader = data_loader(test_data, train=False)
+    trainloader = load_data(train_data)
+    validloader = load_data(valid_data, train=False)
+    testloader = load_data(test_data, train=False)
 
     # Load Model
-    model = primaryloader_model(architecture=args.arch)
+    model = model_load(architecture=args.arch)
 
     # Build Classifier
     model.classifier = initial_classifier(model,
@@ -225,10 +226,10 @@ def main():
                                   device, criterion, optimizer, args.epochs,
                                   print_every, steps)
 
-    print("\ntraining completed")
+    print("\ntraining done")
 
     # Quickly Validate the model
-    validate_model(trained_model, testloader, device)
+    validate(trained_model, testloader, device)
 
     # Save the model
     initial_checkpoint(trained_model, args.save_dir, train_data)

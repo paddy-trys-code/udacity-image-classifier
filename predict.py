@@ -9,39 +9,26 @@ from train import check_gpu
 from torchvision import models
 
 
-# Function arg_parser() parses keyword arguments from the command line
 def arg_parser():
     # Define a parser
     parser = argparse.ArgumentParser(description="nn config.")
 
-    # Point towards image for prediction
-    parser.add_argument('--image',
-                        type=str,
-                        required=True)
+    parser.add_argument('--image', type=str, help = 'image path?', required=True)
 
-    # Load checkpoint created by train.py
-    parser.add_argument('--checkpoint',
-                        type=str,
-                        required=True)
+    parser.add_argument('--checkpoint', type=str, help = 'checkpoint_name?', required=True)
 
-    # Specify top-k
-    parser.add_argument('--top_k',
-                        type=int,
+    parser.add_argument('--top_k', type=int, help = 'top_k?')
 
-    # Import category names
-    parser.add_argument('--category_names',
-                        type=str,
+    parser.add_argument('--category_names', type=str, help = 'category names')
 
-    # Add GPU Option to parser
-    parser.add_argument('--gpu',
-                        action="store_true",
+    parser.add_argument('--gpu', action="store_true", help = 'gpu dummy_var')
 
-    # Parse args
+
     args = parser.parse_args()
 
     return args
 
-# Function load_checkpoint(checkpoint_path) loads our saved deep learning model from checkpoint
+
 def load_checkpoint(file_path):
 
     # Load file
@@ -61,7 +48,6 @@ def load_checkpoint(file_path):
 
     return model
 
-# Function process_image(image_path) performs cropping, scaling of image for our model
 def process_image(image_destination):
 
     test_image = Image.open(image_destination)
@@ -121,30 +107,29 @@ def print_probability(probs, flowers):
                "Flower: {}, liklihood: {}%".format(j[1], ceil(j[0]*100)))
 
 
+
 def main():
 
-    # Get Keyword Args for Prediction
     args = arg_parser()
 
-    # Load categories to names json file
+
     with open(args.category_names, 'r') as f:
         	cat_to_name = json.load(f)
 
-    # Load model trained with train.py
+
     model = load_checkpoint(args.checkpoint)
 
-    # Process Image
+
     image_tensor = process_image(args.image)
 
-    # Check for GPU
     device = check_gpu(gpu_arg=args.gpu);
 
-    # Use `processed_image` to predict the top K most likely classes
+
     top_probs, top_labels, top_flowers = predict(image_tensor, model,
                                                  device, cat_to_name,
                                                  args.top_k)
 
-    # Print out probabilities
+
     print_probability(top_flowers, top_probs)
 
-if __name__ == '__main__': main()
+if __name__ == '__main__': main
